@@ -308,3 +308,19 @@ Python Developer | Machine Learning Developer
 **Built with Python, NLP & Machine Learning**
 
 </div>
+
+---
+
+<div align="center">
+
+<br>
+
+<img src="https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif" width="130" alt="Email animation"/>
+
+<h3 align="center">💌 Thanks for Visiting! 💌</h3>
+
+<br>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=15,20,25,30,35&height=160&section=footer&text=Thanks%20for%20Visiting!&fontSize=30&fontColor=ffffff&animation=twinkling&fontAlignY=72" width="100%"/>
+
+</div>

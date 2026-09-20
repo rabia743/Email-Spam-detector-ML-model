@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spam Detector — ML Powered</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+      font-family: 'Poppins', sans-serif;
+      background: #f0f4ff;
+      background-image:
+        radial-gradient(ellipse at 15% 20%, rgba(147, 197, 253, 0.55), transparent 55%),
+        radial-gradient(ellipse at 85% 15%, rgba(196, 181, 253, 0.55), transparent 55%),
+        radial-gradient(ellipse at 75% 85%, rgba(251, 207, 232, 0.50), transparent 55%),
+        radial-gradient(ellipse at 20% 90%, rgba(165, 243, 252, 0.45), transparent 55%),
+        linear-gradient(180deg, #f8faff 0%, #eef2ff 50%, #faf5ff 100%);
+      background-attachment: fixed;
+      animation: bgShift 18s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgShift {
+      0%   { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%; }
+      50%  { background-position: 5% 3%, 95% 5%, 92% 95%, 8% 92%, 0% 0%; }
+      100% { background-position: 0% 5%, 100% 3%, 98% 100%, 2% 95%, 0% 0%; }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px 35px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .container:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2d3748;
+      font-size: 28px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #718096;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      font-size: 15px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      font-family: inherit;
+      background: #f7fafc;
+    }
+
+    textarea:focus {
+      border-color: #667eea;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 18px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(102, 126, 234, 0.55);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-box {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 14px;
+      display: none;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .result-box.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-box.spam {
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      border-left: 6px solid #e53935;
+      color: #b71c1c;
+    }
+
+    .result-box.ham {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border-left: 6px solid #43a047;
+      color: #1b5e20;
+    }
+
+    .result-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .prob-bar {
+      height: 10px;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .prob-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 6px;
+      transition: width 0.8s ease;
+    }
+
+    .spam .prob-fill {
+      background: linear-gradient(90deg, #e53935, #ff6b6b);
+    }
+
+    .ham .prob-fill {
+      background: linear-gradient(90deg, #43a047, #66bb6a);
+    }
+
+    .prob-text {
+      font-size: 13px;
+      margin-top: 10px;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+
+    .confidence-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .confidence-badge.high { background: #c8e6c9; color: #1b5e20; }
+    .confidence-badge.medium { background: #fff9c4; color: #f57f17; }
+    .confidence-badge.low { background: #ffcdd2; color: #b71c1c; }
+
+    /* ===== EXAMPLES SECTION ===== */
+    .examples {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #a0aec0;
+      text-align: center;
+    }
+
+    .examples span {
+      cursor: pointer;
+      color: #667eea;
+      text-decoration: underline;
+      margin: 0 4px;
+      transition: color 0.2s;
+    }
+
+    .examples span:hover {
+      color: #764ba2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15%      { transform: translateX(-10px) rotate(-1deg); }
+      30%      { transform: translateX(10px)  rotate(1deg); }
+      45%      { transform: translateX(-8px)  rotate(-1deg); }
+      60%      { transform: translateX(8px)   rotate(1deg); }
+      75%      { transform: translateX(-4px); }
+      90%      { transform: translateX(4px); }
+    }
+
+    @keyframes redGlow {
+      0%, 100% { box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3); }
+      50%      { box-shadow: 0 0 60px 10px rgba(229, 57, 53, 0.75); }
+    }
+
+    @keyframes stampIn {
+      0%   { transform: scale(3) rotate(-25deg); opacity: 0; }
+      60%  { transform: scale(1.1) rotate(-12deg); opacity: 1; }
+      100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+    }
+
+    @keyframes pulseWarn {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+
+    .container.spam-animate {
+      animation: shake 0.7s ease-in-out, redGlow 1.5s ease-in-out 2;
+    }
+
+    .stamp {
+      position: absolute;
+      top: 30px;
+      right: -20px;
+      padding: 12px 26px;
+      border: 4px solid #e53935;
+      color: #e53935;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.85);
+      transform: rotate(-12deg) scale(3);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      text-shadow: 1px 1px 0 rgba(229, 57, 53, 0.2);
+    }
+
+    .stamp.show {
+      animation: stampIn 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+    }
+
+    .spam .result-title span.icon {
+      display: inline-block;
+      animation: pulseWarn 0.8s ease-in-out infinite;
+    }
+
+    .particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(139, 92, 246, 0.35);
+      border-radius: 50%;
+      animation: rise linear infinite;
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+    }
+
+    @keyframes rise {
+      from { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      to   { transform: translateY(-10vh) translateX(60px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="particles" id="particles"></div>
+
+  <div class="container" id="container">
+    <div class="stamp" id="stamp">SPAM</div>
+
+    <h1>📧 Spam Detector</h1>
+    <p class="subtitle">ML-powered spam detection — paste your email message below.</p>
+
+    <textarea id="emailInput" placeholder="Write or paste your email text here..."></textarea>
+
+    <button class="btn" id="checkBtn">🔍 Check Message</button>
+
+    <!-- ⭐ EXAMPLES SECTION — WAPAS ADD KIYA -->
+    <div class="examples">
+      Try:
+      <span onclick="fillExample('Congratulations! You won a free iPhone. Click here to claim now!!!')">Spam example</span> |
+      <span onclick="fillExample('Hi, are we still meeting for lunch tomorrow at 1pm?')">Normal example</span> |
+      <span onclick="fillExample('you won 200 rupees claim now call 09061701234')">Rupees spam</span>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-title">
+        <span class="icon" id="resultIcon">✅</span>
+        <span id="resultText">Result</span>
+      </div>
+      <div class="prob-bar">
+        <div class="prob-fill" id="probFill"></div>
+      </div>
+      <div class="prob-text" id="probText"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // PARTICLES (background animation)
+    // ============================================================
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 35; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDuration = (8 + Math.random() * 10) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      p.style.opacity = 0.3 + Math.random() * 0.5;
+      const size = 2 + Math.random() * 3;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      const colors = [
+        'rgba(139, 92, 246, 0.5)',
+        'rgba(59, 130, 246, 0.5)',
+        'rgba(236, 72, 153, 0.4)',
+        'rgba(6, 182, 212, 0.4)'
+      ];
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      particlesContainer.appendChild(p);
+    }
+
+    // ============================================================
+    // DOM ELEMENTS
+    // ============================================================
+    const container = document.getElementById('container');
+    const input = document.getElementById('emailInput');
+    const btn = document.getElementById('checkBtn');
+    const resultBox = document.getElementById('resultBox');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultText = document.getElementById('resultText');
+    const probFill = document.getElementById('probFill');
+    const probText = document.getElementById('probText');
+    const stamp = document.getElementById('stamp');
+
+    // ============================================================
+    // API CONFIG — Flask backend ka address
+    // ============================================================
+    const API_BASE = 'http://127.0.0.1:5000';
+    const API_PREDICT = `${API_BASE}/predict`;
+
+    // ============================================================
+    // ⭐ EXAMPLE FILL FUNCTION — WAPAS ADD KIYA
+    // ============================================================
+    function fillExample(text) {
+      input.value = text;
+      input.focus();
+    }
+
+    // ============================================================
+    // MAIN CLICK HANDLER — Flask API CALL
+    // ============================================================
+    btn.addEventListener('click', async () => {
+      const text = input.value.trim();
+
+      if (!text) {
+        alert('Please enter an email message first!');
+        return;
+      }
+
+      // Reset UI
+      container.classList.remove('spam-animate');
+      stamp.classList.remove('show');
+      resultBox.classList.remove('show', 'spam', 'ham');
+      probFill.style.width = '0%';
+
+      // Loading state
+      btn.disabled = true;
+      btn.textContent = '⏳ Analyzing with ML model...';
+
+      try {
+        const response = await fetch(API_PREDICT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        showResult(
+          data.label,
+          data.spam_probability,
+          data.ham_probability,
+          data.confidence
+        );
+
+      } catch (err) {
+        console.error('Prediction error:', err);
+        resultBox.classList.add('show', 'ham');
+        resultIcon.textContent = '⚠️';
+        resultText.textContent = 'Connection Error';
+        probFill.style.width = '0%';
+        probText.innerHTML = `
+          <strong>Its not connected from Backened.</strong><br>
+          Back to the terminal and run the: <code>python app.py</code><br>
+          <span style="opacity:0.7;font-size:11px">Error: ${err.message}</span>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 Check Message';
+      }
+    });
+
+    // ============================================================
+    // SHOW RESULT
+    // ============================================================
+    function showResult(label, spamProb, hamProb, confidence) {
+      const isSpam = label === 'spam';
+      const percent = Number(spamProb).toFixed(1);
+
+      resultBox.classList.add('show', isSpam ? 'spam' : 'ham');
+      resultIcon.textContent = isSpam ? '🚨' : '✅';
+      resultText.textContent = isSpam ? 'Spam Detected!' : 'Not Spam (Safe)';
+
+      probFill.style.width = percent + '%';
+
+      // Confidence badge
+      let badgeClass = 'low';
+      let badgeLabel = 'Low Confidence';
+      if (confidence >= 80) { badgeClass = 'high'; badgeLabel = 'High Confidence'; }
+      else if (confidence >= 60) { badgeClass = 'medium'; badgeLabel = 'Medium Confidence'; }
+
+      probText.innerHTML = `
+        <strong>Spam:</strong> ${spamProb}% &nbsp;|&nbsp;
+        <strong>Ham:</strong> ${hamProb}%<br>
+        <span class="confidence-badge ${badgeClass}">${badgeLabel} (${confidence}%)</span>
+      `;
+
+      if (isSpam) {
+        container.classList.add('spam-animate');
+        stamp.classList.add('show');
+        setTimeout(() => stamp.classList.remove('show'), 2500);
+        setTimeout(() => container.classList.remove('spam-animate'), 3200);
+      }
+    }
+
+    // ============================================================
+    // KEYBOARD SHORTCUT (Ctrl+Enter = Check)
+    // ============================================================
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        btn.click();
+      }
+    });
+  </script>
+</body>
+</html>

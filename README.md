@@ -321,6 +321,4 @@ Python Developer | Machine Learning Developer
 
 <br>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=15,20,25,30,35&height=160&section=footer&text=Thanks%20for%20Visiting!&fontSize=30&fontColor=ffffff&animation=twinkling&fontAlignY=72" width="100%"/>
-
 </div>
